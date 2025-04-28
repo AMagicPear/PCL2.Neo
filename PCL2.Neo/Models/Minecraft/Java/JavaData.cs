@@ -1,10 +1,15 @@
+using B2R2;
+using B2R2.FrontEnd.BinFile;
+using B2R2.FrontEnd.BinFile.Mach;
 using PCL2.Neo.Utils;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Architecture = System.Runtime.InteropServices.Architecture;
 
 namespace PCL2.Neo.Models.Minecraft.Java;
 
@@ -17,18 +22,22 @@ public enum JavaCompability
     /// 未知，例如尚未初始化
     /// </summary>
     Unknown,
+
     /// <summary>
     /// 能够原生运行
     /// </summary>
     Yes,
+
     /// <summary>
     /// 不兼容
     /// </summary>
     No,
+
     /// <summary>
     /// 对于 Win11 on Arm 或者 M 芯片 macOS 可以转译运行
     /// </summary>
     UnderTranslation,
+
     /// <summary>
     /// 初始化失败或者不是 Java 可执行文件
     /// </summary>
@@ -88,7 +97,7 @@ public class JavaRuntime
     {
         Debug.WriteLine($"创建 JavaRuntime: {directoryPath}");
         var javaInfo = await JavaInfoInitAsync(directoryPath);
-        if(javaInfo.Compability == JavaCompability.Error) return null;
+        if (javaInfo.Compability == JavaCompability.Error) return null;
         var javaEntity = new JavaRuntime(directoryPath, javaInfo) { IsUserImport = isUserImport };
         return javaEntity;
     }
@@ -97,15 +106,19 @@ public class JavaRuntime
     /// 是否为用户手动导入，手动导入的运行时在刷新时不会被刷新掉
     /// </summary>
     public bool IsUserImport { get; set; }
+
     /// <summary>
     /// Java 数字版本
     /// </summary>
     public int Version => _javaInfo.Version;
+
     public bool Is64Bit => _javaInfo.Is64Bit;
+
     /// <summary>
     /// Win11 和 macOS 都有兼具 arm 和 x86_64 兼容的可执行文件，如果是这种通用文件就标记为 True
     /// </summary>
     public bool IsFatFile => _javaInfo.IsFatFile;
+
     public JavaCompability Compability => _javaInfo.Compability;
     public bool IsJre => _javaInfo.IsJre;
     public string JavaExe => Path.Combine(DirectoryPath, "java");
@@ -173,36 +186,72 @@ public class JavaRuntime
         // 针对 macOS 的转译问题额外设置兼容性
         if (Const.Os is Const.RunningOs.MacOs)
         {
-            using var lipoProcess = new Process();
-            lipoProcess.StartInfo = new ProcessStartInfo
-            {
-                FileName = "/usr/bin/lipo",
-                Arguments = "-info " + javaExe,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardError = true,
-                RedirectStandardOutput = true
-            };
-            lipoProcess.Start();
-            await lipoProcess.WaitForExitAsync();
-            var output = (await lipoProcess.StandardOutput.ReadToEndAsync()).Trim();
             var sysArchitecture = RuntimeInformation.OSArchitecture;
-            info.IsFatFile = !output.StartsWith("Non-fat file");
-            output = output.AfterLast(":");
-            Debug.Assert(sysArchitecture is Architecture.X64 or Architecture.Arm64);
-            switch (sysArchitecture)
+            byte[] bytes = await File.ReadAllBytesAsync(javaExe);
+            uint magic = BitConverter.ToUInt32(bytes, 0);
+            if (magic == (uint)Magic.FAT_CIGAM)
             {
-                case Architecture.X64:
-                    info.Compability = output.Contains("x86_64") ? JavaCompability.Yes : JavaCompability.No;
-                    break;
-                case Architecture.Arm64:
-                    if (output.Contains("arm64")) info.Compability = JavaCompability.Yes;
-                    else if (output.Contains("x86_64")) info.Compability = JavaCompability.UnderTranslation;
-                    break;
-                default:
-                    Debug.Fail("本句报错理论上永远不会出现：可运行Avalonia的macOS不可能是其他架构");
-                    break;
+                info.IsFatFile = true;
+                FatArch[] arches = Fat.loadFatArchs(bytes);
+                info.Compability = sysArchitecture switch
+                {
+                    Architecture.Arm64 => arches.Any(arch => arch.CPUType is CPUType.ARM64) ? JavaCompability.Yes :
+                        arches.Any(arch => arch.CPUType is CPUType.X64) ? JavaCompability.UnderTranslation :
+                        JavaCompability.Error,
+                    Architecture.X64 => arches.Any(arch => arch.CPUType is CPUType.X64)
+                        ? JavaCompability.Yes
+                        : JavaCompability.No,
+                    _ => throw new ArgumentOutOfRangeException(),
+                };
             }
+            else if (magic == (uint)Magic.FAT_MAGIC)
+            {
+                info.IsFatFile = true;
+                throw new NotImplementedException();
+            }
+            else
+            {
+                info.IsFatFile = false;
+                var binFile = FileFactory.load(javaExe, bytes, FileFormat.MachBinary, ISA.DefaultISA, null, null);
+                var arch = binFile.ISA.Arch;
+                info.Compability = sysArchitecture switch
+                {
+                    Architecture.Arm64 => arch is B2R2.Architecture.AARCH64 ? JavaCompability.Yes :
+                        arch is B2R2.Architecture.IntelX64 ? JavaCompability.UnderTranslation : JavaCompability.No,
+                    Architecture.X64 => arch is B2R2.Architecture.IntelX64 ? JavaCompability.Yes : JavaCompability.No,
+                    _ => throw new ArgumentOutOfRangeException(),
+                };
+            }
+            // using var lipoProcess = new Process();
+            // lipoProcess.StartInfo = new ProcessStartInfo
+            // {
+            //     FileName = "/usr/bin/lipo",
+            //     Arguments = "-info " + javaExe,
+            //     UseShellExecute = false,
+            //     CreateNoWindow = true,
+            //     RedirectStandardError = true,
+            //     RedirectStandardOutput = true
+            // };
+            // lipoProcess.Start();
+            // await lipoProcess.WaitForExitAsync();
+            // var output = (await lipoProcess.StandardOutput.ReadToEndAsync()).Trim();
+            // var sysArchitecture = RuntimeInformation.OSArchitecture;
+            // info.IsFatFile = !output.StartsWith("Non-fat file");
+            // output = output.AfterLast(":");
+            // Debug.Assert(sysArchitecture is Architecture.X64 or Architecture.Arm64);
+            // switch (sysArchitecture)
+            // {
+            //     case Architecture.X64:
+            //         info.Compability = output.Contains("x86_64") ? JavaCompability.Yes : JavaCompability.No;
+            //         break;
+            //     case Architecture.Arm64:
+            //         if (output.Contains("arm64")) info.Compability = JavaCompability.Yes;
+            //         else if (output.Contains("x86_64")) info.Compability = JavaCompability.UnderTranslation;
+            //         break;
+            //     default:
+            //         Debug.Fail("本句报错理论上永远不会出现：可运行Avalonia的macOS不可能是其他架构");
+            //         break;
+            // }
         }
 
         // 针对 Linux 设置兼容性
@@ -261,7 +310,9 @@ public class JavaRuntime
                 if (architecture != null)
                 {
                     Console.WriteLine($"{javaExe}: {architecture.Value}"); // for debug
-                    info.Compability = architecture.Value == RuntimeInformation.OSArchitecture ? JavaCompability.Yes : JavaCompability.No; // 未判断转译
+                    info.Compability = architecture.Value == RuntimeInformation.OSArchitecture
+                        ? JavaCompability.Yes
+                        : JavaCompability.No; // 未判断转译
                 }
             }
         }
