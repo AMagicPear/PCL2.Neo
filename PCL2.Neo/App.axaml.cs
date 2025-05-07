@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using PCL2.Neo.Services;
@@ -11,6 +12,7 @@ using PCL2.Neo.ViewModels.Download;
 using PCL2.Neo.ViewModels.Home;
 using PCL2.Neo.Views;
 using System;
+using System.Globalization;
 
 namespace PCL2.Neo
 {
@@ -39,6 +41,7 @@ namespace PCL2.Neo
             Ioc.Default.ConfigureServices(ConfigureServices());
 
             var vm = Ioc.Default.GetRequiredService<MainWindowViewModel>();
+            I18NExtension.Culture = new CultureInfo("zh-hans-cn");
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 // Avoid duplicate validations from both Avalonia and the CommunityToolkit.

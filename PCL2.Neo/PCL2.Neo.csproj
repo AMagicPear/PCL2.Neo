@@ -25,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Antelcat.I18N.Avalonia" Version="1.1.2" />
     <PackageReference Include="Avalonia" Version="11.2.8" />
     <PackageReference Include="Avalonia.Desktop" Version="11.2.8" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.8" />
@@ -38,10 +39,6 @@
     <PackageReference Include="DotNet.Bundle" Version="0.9.13" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Include="Assets\Language\zh-CN.axaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -64,10 +61,26 @@
       <DependentUpon>DownloadModView.axaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Assets\Language\Lang.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Lang.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Views\MainPage\" />
     <Folder Include="Views\SubPage\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Assets\Language\Lang.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Lang.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Assets\Language\Lang.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Lang.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

@@ -19,7 +19,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:pc="using:PCL2.Neo.Controls"
     xmlns:vm="using:PCL2.Neo.ViewModels"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:lang="clr-namespace:PCL2.Neo.Assets.Language">
     <Grid Name="GridRoot">
         <Border
             BoxShadow="0 0 15 5 #50000000"
@@ -163,7 +164,7 @@
                                 Name="BtnTitleSelect0"
                                 Padding="2,0"
                                 Tag="0"
-                                Text="{DynamicResource LangTitleHome}" />
+                                Text="{I18N {x:Static lang:LangKeys.TitleHome}}" />
                             <pc:MyRadioButton
                                 Command="{Binding NavigateToDownload}"
                                 IsChecked="{Binding IsNavBtn2Checked}"
@@ -173,7 +174,7 @@
                                 Name="BtnTitleSelect1"
                                 Padding="2,0"
                                 Tag="1"
-                                Text="{DynamicResource LangTitleDownload}" />
+                                Text="{I18N {x:Static lang:LangKeys.TitleDownload}}" />
                             <pc:MyRadioButton
                                 IsChecked="{Binding IsNavBtn3Checked}"
                                 Logo="{StaticResource BtnTitleSelect2}"
@@ -182,7 +183,7 @@
                                 Name="BtnTitleSelect2"
                                 Padding="2,0"
                                 Tag="2"
-                                Text="{DynamicResource LangTitleLink}" />
+                                Text="{I18N {x:Static lang:LangKeys.TitleLink}}" />
                             <pc:MyRadioButton
                                 IsChecked="{Binding IsNavBtn4Checked}"
                                 Logo="{DynamicResource BtnTitleSelect3}"
@@ -191,7 +192,7 @@
                                 Name="BtnTitleSelect3"
                                 Padding="2,0"
                                 Tag="3"
-                                Text="{DynamicResource LangTitleSetup}" />
+                                Text="{I18N {x:Static lang:LangKeys.TitleSetup}}" />
                             <pc:MyRadioButton
                                 IsChecked="{Binding IsNavBtn5Checked}"
                                 Logo="{StaticResource BtnTitleSelect4}"
@@ -200,7 +201,7 @@
                                 Name="BtnTitleSelect4"
                                 Padding="2,0"
                                 Tag="4"
-                                Text="{DynamicResource LangTitleOther}" />
+                                Text="{I18N {x:Static lang:LangKeys.TitleOther}}" />
                         </StackPanel>
                     </Border>
 

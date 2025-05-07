@@ -12,7 +12,7 @@
         <ResourceDictionary>
 
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://PCL2.Neo/Assets/Language/zh-CN.axaml" />
+                <!-- <ResourceInclude Source="avares://PCL2.Neo/Assets/Language/zh-CN.axaml" /> -->
                 <ResourceInclude Source="avares://PCL2.Neo/Colors.axaml" />
             </ResourceDictionary.MergedDictionaries>
 
